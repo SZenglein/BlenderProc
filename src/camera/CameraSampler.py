@@ -1,6 +1,7 @@
 import numbers
 import sys
 from collections import defaultdict
+from random import choice
 
 import bmesh
 import bpy
@@ -154,6 +155,9 @@ class CameraSampler(CameraInterface):
         * - check_if_objects_visible
           - A list of objects, which always should be visible in the camera view. Default: [].
           - list
+        * - auto_override_focal_object
+          - Override the focal object with a random object in view after sampling the camera pose. Default: False
+          - bool
     """
 
     def __init__(self, config):
@@ -205,6 +209,7 @@ class CameraSampler(CameraInterface):
         self.special_objects_weight = config.get_float("special_objects_weight", 2)
         self._above_objects = config.get_list("check_if_pose_above_object_list", [])
         self.check_visible_objects = config.get_list("check_if_objects_visible", [])
+        self.auto_override_focal_object = config.get_bool("auto_override_focal_object", False)
 
         # Set camera intrinsics
         self._set_cam_intrinsics(cam, Config(self.config.get_raw_dict("intrinsics", {})))
@@ -254,6 +259,16 @@ class CameraSampler(CameraInterface):
                 tries = 0
 
         print(str(all_tries) + " tries were necessary")
+
+        if (self.auto_override_focal_object):
+            print("Overriding focal object to a random object in view.")
+            cam2world_matrix = self._cam2world_matrix_from_cam_extrinsics(config)
+            visible_objects = self._visible_objects(cam, cam2world_matrix)
+            focal_object = choice(tuple(visible_objects))
+
+            cam.dof.focus_object = focal_object
+
+
 
     def sample_and_validate_cam_pose(self, cam, cam_ob, config):
         """ Samples a new camera pose, sets the parameters of the given camera object accordingly and validates it.
