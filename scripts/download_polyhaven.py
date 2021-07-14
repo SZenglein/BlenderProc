@@ -16,13 +16,15 @@ output_dir = Path(__file__).parent / ".." / "resources" / "polyhaven"
 parser.add_argument('--output_folder', help="Determines where the data is going to be saved.", default=output_dir)
 parser.add_argument('--tags', nargs='+', help="Filter by asset Tag.", default=None)
 parser.add_argument('--categories', nargs='+', help="Filter by asset Category.", default=None)
-parser.add_argument('--type', nargs='+', help="Filter by asset Type.", default=None)
+parser.add_argument('--type', help="Filter by asset Type.", default=None)
 args = parser.parse_args()
 
 output_dir = Path(args.output_folder)
 
 
 def get_assets(asset_type=None, categories=None, tags=None):
+    if categories:
+        categories = ",".join(categories)
     params = {"type": asset_type, "categories": categories}
     assets = requests.get("https://api.polyhaven.com/assets", params=params).json()
 
@@ -87,9 +89,13 @@ def download_hdri(asset_id, asset, output_dir, img_format, resolution):
 
 def download_items(output_dir, resolution, img_format, asset_type, categories, tags):
     assets = get_assets(asset_type, categories, tags)
+    num_assets = len(assets.keys())
+    print("found ", num_assets, "assets")
 
+    asset_count = 0
     for (asset_id, asset) in assets.items():
-        # 2 => model
+        asset_count += 1
+        print("Asset", asset_count, "/", num_assets)
         if asset["type"] == 2:
             download_model(asset_id, asset, output_dir / "models", resolution)
         elif asset["type"] == 1:
