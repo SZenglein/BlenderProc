@@ -1,4 +1,5 @@
 import os
+import random
 import re
 from typing import List, Union
 
@@ -7,7 +8,9 @@ import bpy
 from src.utility.BlenderUtility import collect_all_orphan_datablocks
 from src.utility.EntityUtility import Entity
 from src.utility.LightUtility import Light
+from src.utility.MaterialUtility import Material
 from src.utility.MeshObjectUtility import MeshObject
+from src.utility.StructUtility import Struct
 from src.utility.Utility import Utility
 
 
@@ -37,7 +40,166 @@ class BlendLoader:
         return config_value
 
     @staticmethod
-    def load(path: str, obj_types: Union[list, str] = ["mesh", "empty"], name_regrex: str = None, data_blocks: Union[list, str] = "objects") -> List[MeshObject]:
+    def load_random_from_directory(directory: str, obj_types: Union[list, str] = ["mesh", "empty"], name_regrex: str = None, data_blocks: Union[list, str] = "objects") -> List[MeshObject]:
+        """
+        Loads a random blender file from a given directory tree.
+
+        :param directory: Path to the directory containing blender files.
+        :param obj_types: The type of objects to load. This parameter is only relevant when `data_blocks` is set to `"objects"`.
+                          Available options are: ['mesh', 'curve', 'hair', 'armature', 'empty', 'light', 'camera']
+        :param name_regrex: Regular expression representing a name pattern of entities' (everything that can be stored in a .blend
+                         file's folders, see Blender's documentation for bpy.types.ID for more info) names.
+        :param data_blocks: The datablock or a list of datablocks which should be loaded from the given .blend file.
+                            Available options are: ['armatures', 'cameras', 'curves', 'hairs', 'images', 'lights', 'materials', 'meshes', 'objects', 'textures']
+        :return: The list of loaded mesh objects.
+        """
+        blend_files = []
+        for root, dirs, files in os.walk(directory):
+            for name in files:
+                file_path = os.path.join(root, name)
+                if file_path.endswith(".blend"):
+                    blend_files.append(file_path)
+
+        filename = random.choice(blend_files)
+        print("selected " + filename)
+        objects = BlendLoader.load_grouped(filename, obj_types, name_regrex, data_blocks)
+
+        for obj in objects:
+            if isinstance(obj, MeshObject) and len(obj.blender_obj.users_scene) > 0:
+                obj.persist_transformation_into_mesh(True, True, True)
+                obj.move_origin_to_bottom_mean_point()
+
+        return objects
+
+    @staticmethod
+    def load_grouped(path: str, obj_types: Union[list, str] = ["mesh", "empty"], name_regrex: str = None, data_blocks: Union[list, str] = "objects") -> List[Struct]:
+        """
+        TODO: modify doc: this additionally groups by parent relationship and items in collections because it is
+        not very useful for importing single objects composed of multiple smaller objects
+        Loads entities (everything that can be stored in a .blend file's folders, see Blender's documentation for
+        bpy.types.ID for more info) that match a name pattern from a specified .blend file's section/datablock.
+
+        :param path: Path to a .blend file.
+        :param obj_types: The type of objects to load. This parameter is only relevant when `data_blocks` is set to `"objects"`.
+                          Available options are: ['mesh', 'curve', 'hair', 'armature', 'empty', 'light', 'camera']
+        :param name_regrex: Regular expression representing a name pattern of entities' (everything that can be stored in a .blend
+                         file's folders, see Blender's documentation for bpy.types.ID for more info) names.
+        :param data_blocks: The datablock or a list of datablocks which should be loaded from the given .blend file.
+                            Available options are: ['armatures', 'cameras', 'curves', 'hairs', 'images', 'lights', 'materials', 'meshes', 'objects', 'textures']
+        :return: The list of loaded mesh objects.
+        """
+        # get a path to a .blend file
+        path = Utility.resolve_path(path)
+        data_blocks = BlendLoader._validate_and_standardizes_configured_list(data_blocks, BlendLoader.valid_datablocks, "data block")
+        obj_types = BlendLoader._validate_and_standardizes_configured_list(obj_types, BlendLoader.valid_object_types, "object type")
+
+        # Remember which orphans existed beforehand
+        orphans_before = collect_all_orphan_datablocks()
+
+        # Start importing blend file. All objects that should be imported need to be copied from "data_from" to "data_to"
+        with bpy.data.libraries.load(path) as (data_from, data_to):
+            # also copy over collections - objects are often grouped
+            data_to.collections = data_from.collections
+
+            for data_block in data_blocks:
+                # Verify that the given data block is valid
+                if hasattr(data_from, data_block):
+                    # Find all entities of this data block that match the specified pattern
+                    data_to_entities = []
+                    for entity_name in getattr(data_from, data_block):
+                        if not name_regrex or re.fullmatch(name_regrex, entity_name) is not None:
+                            data_to_entities.append(entity_name)
+                    # Import them
+                    setattr(data_to, data_block, data_to_entities)
+                    print("Imported " + str(len(data_to_entities)) + " " + data_block)
+                else:
+                    raise Exception("No such data block: " + data_block)
+
+        # Go over all imported objects again
+        loaded_objects = []
+        for data_block in data_blocks:
+            # Some adjustments that only affect objects
+            if data_block == "objects":
+                loaded_raw_objects = []
+                for obj in getattr(data_to, data_block):
+                    if obj.type.lower() in obj_types:
+                        bpy.context.collection.objects.link(obj)
+                        loaded_raw_objects.append(obj)
+                    else:
+                        # Remove object again if its type is not desired
+                        bpy.data.objects.remove(obj, do_unlink=True)
+
+                for collection in data_to.collections:
+                    print("doing collection")
+                    print(collection)
+                    # deselect all objects
+                    for obj in bpy.data.objects:
+                        obj.select_set(False)
+
+                    # now select all collection objects and join them
+                    for obj in collection.all_objects:
+                        if len(obj.users_scene) > 0:
+                            print("selecting object: " + obj.name)
+                            obj.select_set(True)
+                            bpy.context.view_layer.objects.active = obj
+
+                    print("joining selected objects")
+                    print(bpy.context.selected_objects)
+                    bpy.ops.object.join()
+
+                print("before checking raw objects: ")
+                for obj in loaded_raw_objects:
+                    print(obj)
+                print(loaded_raw_objects)
+                # now clean up again
+                for obj in loaded_raw_objects:
+                    # print("checking raw object: " + obj.name + ", users_scene: " + str(obj.users_scene))
+                    # if no longer in scene, it has been joined
+                    if len(obj.users_scene) == 0:
+                        # print("remove " + obj.name + " from loaded_raw_objects")
+                        loaded_raw_objects.remove(obj)
+
+                # print("final blender objects loaded from file")
+                # print(loaded_raw_objects)
+
+                for obj in loaded_raw_objects:
+                    if obj.type == 'MESH':
+                        loaded_objects.append(MeshObject(obj))
+                    elif obj.type == 'LIGHT':
+                        loaded_objects.append(Light(obj))
+                    else:
+                        loaded_objects.append(Entity(obj))
+
+                    # If a camera was imported
+                    if obj.type == 'CAMERA':
+                        # Make it the active camera in the scene
+                        bpy.context.scene.camera = obj
+
+                        # Find the maximum frame number of its key frames
+                        max_keyframe = -1
+                        if obj.animation_data is not None:
+                            fcurves = obj.animation_data.action.fcurves
+                            for curve in fcurves:
+                                keyframe_points = curve.keyframe_points
+                                for keyframe in keyframe_points:
+                                    max_keyframe = max(max_keyframe, keyframe.co[0])
+
+                        # Set frame_end to the next free keyframe
+                        bpy.context.scene.frame_end = max_keyframe + 1
+
+                print("Selected " + str(len(loaded_objects)) + " of the loaded objects by type")
+            elif data_block == "materials":
+                for obj in getattr(data_to, data_block):
+                    loaded_objects.append(Material(obj))
+            else:
+                loaded_objects.extend(getattr(data_to, data_block))
+
+        # As some loaded objects were deleted again due to their type, we need also to remove the dependent datablocks that were also loaded and are now orphans
+        BlendLoader._purge_added_orphans(orphans_before, data_to)
+        return loaded_objects
+
+    @staticmethod
+    def load(path: str, obj_types: Union[list, str] = ["mesh", "empty"], name_regrex: str = None, data_blocks: Union[list, str] = "objects") -> List[Struct]:
         """
         Loads entities (everything that can be stored in a .blend file's folders, see Blender's documentation for
         bpy.types.ID for more info) that match a name pattern from a specified .blend file's section/datablock.
@@ -112,6 +274,9 @@ class BlendLoader:
                         # Remove object again if its type is not desired
                         bpy.data.objects.remove(obj, do_unlink=True)
                 print("Selected " + str(len(loaded_objects)) + " of the loaded objects by type")
+            elif data_block == "materials":
+                for obj in getattr(data_to, data_block):
+                    loaded_objects.append(Material(obj))
             else:
                 loaded_objects.extend(getattr(data_to, data_block))
 
