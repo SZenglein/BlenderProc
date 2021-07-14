@@ -506,8 +506,20 @@ class MaterialManipulator(Module):
         :param shader_input_key: Name of the shader's input.
         :param value: Value to set.
         """
-        principled_bsdf = material.get_the_one_node_with_type("BsdfPrincipled")
+
+        principled_bsdfs = material.get_nodes_with_type("BsdfPrincipled")
+        if len(principled_bsdfs) != 1:
+            print("the material " + material.get_name() + " does not have exactly one BSDF, skipping")
+            return
+
+        principled_bsdf = principled_bsdfs[0]
+
         shader_input_key_copy = shader_input_key.replace("_", " ").title()
+
+        # dumb workaround for IOR
+        if shader_input_key_copy == "Ior":
+            shader_input_key_copy = "IOR"
+
         if principled_bsdf.inputs[shader_input_key_copy].links:
             material.links.remove(principled_bsdf.inputs[shader_input_key_copy].links[0])
         if shader_input_key_copy in principled_bsdf.inputs:
