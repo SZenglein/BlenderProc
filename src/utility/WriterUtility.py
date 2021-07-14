@@ -176,6 +176,8 @@ class WriterUtility:
             return cam_ob.data.angle_x * 0.5
         elif attribute_name == "half_fov_y":
             return cam_ob.data.angle_y * 0.5
+        elif attribute_name.startswith("stereo."):
+            return getattr(cam_ob.data.stereo, attribute_name[7:])
         elif attribute_name == "cam_K":
             return [[x for x in c] for c in CameraUtility.get_intrinsics_as_K_matrix()]
         else:
