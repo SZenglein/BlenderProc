@@ -224,7 +224,7 @@ class RendererUtility:
 
         bpy.context.scene.render.use_compositing = True
         bpy.context.scene.use_nodes = True
-        GlobalStorage.add("renderer_distance_end", distance_start + distance_range)
+        GlobalStorage.set("renderer_distance_end", distance_start + distance_range)
 
         tree = bpy.context.scene.node_tree
         links = tree.links

@@ -10,11 +10,11 @@ parser = argparse.ArgumentParser("Script to visualize hdf5 files")
 
 parser.add_argument('hdf5_paths', nargs='+', help='Path to hdf5 file/s')
 parser.add_argument('--keys', nargs='+', help='Keys that should be visualized. If none is given, all keys are visualized.', default=None)
-parser.add_argument('--rgb_keys', nargs='+', help='Keys that should be interpreted as rgb data.', default=["colors", "normals", "diffuse"])
+parser.add_argument('--rgb_keys', nargs='+', help='Keys that should be interpreted as rgb data.', default=["colors", "normals", "diffuse", "normals_0", "normals_1", "normals_2", "normals_3", "normals_4", "ntransmask_0", "ntransmask_1", "ntransmask_2", "ntransmask_3", "ntransmask_4"])
 parser.add_argument('--flow_keys', nargs='+', help='Keys that should be interpreted as optical flow data.', default=["forward_flow", "backward_flow"])
 parser.add_argument('--segmap_keys', nargs='+', help='Keys that should be interpreted as segmentation data.', default=["segmap"])
 parser.add_argument('--segcolormap_keys', nargs='+', help='Keys that point to the segmentation color maps corresponding to the configured segmap_keys.', default=["segcolormap"])
-parser.add_argument('--other_non_rgb_keys', nargs='+', help='Keys that contain additional non-RGB data which should be visualized using a jet color map.', default=["distance", "depth"])
+parser.add_argument('--other_non_rgb_keys', nargs='+', help='Keys that contain additional non-RGB data which should be visualized using a jet color map.', default=["distance", "depth", "distance_0", "distance_1", "distance_2", "distance_3", "distance_4"])
 
 args = parser.parse_args()
 
