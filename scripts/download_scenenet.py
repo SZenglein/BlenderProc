@@ -8,7 +8,16 @@ if version_info.major == 2:
 import os
 from urllib.request import urlretrieve, build_opener, install_opener
 import subprocess
+from pathlib import Path
+import argparse
 
+
+parser = argparse.ArgumentParser()
+output_dir = Path(__file__).parent / ".." / "resources" / "scenenet"
+parser.add_argument('--output_folder', help="Determines where the data is going to be saved.", default=output_dir)
+args = parser.parse_args()
+
+output_dir = Path(args.output_folder)
 
 if __name__ == "__main__":
     # setting the default header, else the server does not allow the download
@@ -17,14 +26,13 @@ if __name__ == "__main__":
     install_opener(opener)
 
     # set the download directory relative to this one
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    scenenet_dir= os.path.join(current_dir, "..", "resources", "scenenet")
+    scenenet_dir= os.path.abspath(output_dir)
 
     if not os.path.exists(scenenet_dir):
         os.makedirs(scenenet_dir)
 
     # download the zip file, which contains all the obj files
-    print("Download the zip file, may take a while:")
+    print("Download the zip file, may take a while: ", scenenet_dir)
     scenenet_url = "https://bitbucket.org/robotvault/downloadscenenet/get/cfe5ab85ddcc.zip"
     zip_file_path = os.path.join(scenenet_dir, "scene_net.zip")
     urlretrieve(scenenet_url, zip_file_path)

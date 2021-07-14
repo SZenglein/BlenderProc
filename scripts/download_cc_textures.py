@@ -6,7 +6,15 @@ import os
 import csv
 import subprocess
 import requests
+from pathlib import Path
+import argparse
 
+parser = argparse.ArgumentParser()
+output_dir = Path(__file__).parent / ".." / "resources" / "cctextures"
+parser.add_argument('--output_folder', help="Determines where the data is going to be saved.", default=output_dir)
+args = parser.parse_args()
+
+output_dir = Path(args.output_folder)
 
 if __name__ == "__main__":
     # setting the default header, else the server does not allow the download
@@ -16,7 +24,7 @@ if __name__ == "__main__":
 
     # set the download directory relative to this one
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    cc_texture_dir = os.path.join(current_dir, "..", "resources", "cctextures")
+    cc_texture_dir = output_dir
 
     if not os.path.exists(cc_texture_dir):
         os.makedirs(cc_texture_dir)
