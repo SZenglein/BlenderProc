@@ -1,5 +1,6 @@
 from src.loader.LoaderInterface import LoaderInterface
 from src.utility.EntityUtility import Entity
+from src.utility.StructUtility import Struct
 from src.utility.loader.BlendLoader import BlendLoader
 
 class BlendLoaderModule(LoaderInterface):
@@ -64,4 +65,4 @@ class BlendLoaderModule(LoaderInterface):
             name_regrex=self.config.get_string("entities", None),
             data_blocks=self.config.get_raw_value("datablocks", "objects")
         )
-        self._set_properties([obj for obj in newly_loaded_objects if isinstance(obj, Entity)])
+        self._set_properties([obj for obj in newly_loaded_objects if isinstance(obj, Struct)])
