@@ -12,6 +12,8 @@
     {
       "module": "main.Initializer",
       "config": {
+        "compute_device_type": "OPTIX",
+        "device_whitelist": ["CUDA_Tesla T4_0000:da:00"],
         "global": {
           "output_dir": "<args:3>",
           "max_bounces": 64,

@@ -3,6 +3,7 @@ import random
 from numpy import random as np_random
 from sys import platform
 import multiprocessing
+import re
 
 import bpy
 from src.utility.CameraUtility import CameraUtility
@@ -16,7 +17,7 @@ from src.utility.RendererUtility import RendererUtility
 class Initializer:
 
     @staticmethod
-    def init(horizon_color: list = [0.05, 0.05, 0.05], compute_device: str = "GPU", compute_device_type: str = None, use_experimental_features: bool = False, clean_up_scene: bool = True):
+    def init(horizon_color: list = [0.05, 0.05, 0.05], compute_device: str = "GPU", compute_device_type: str = None, device_whitelist = None, use_experimental_features: bool = False, clean_up_scene: bool = True):
         """ Initializes basic blender settings, the world and the camera.
 
         Also cleans up the whole scene at first.
@@ -58,10 +59,15 @@ class Initializer:
                         break
                 if found:
                     break
-            # make sure that all visible GPUs are used
-            for group in prefs.get_devices():
-                for d in group:
+
+            # make sure that all visible GPUs (that are whitelisted) are used
+            for d in prefs.devices:
+                if (not device_whitelist) or any(re.fullmatch(sub, d.id) for sub in device_whitelist):
+                    print("activating device", d.name, d.id)
                     d.use = True
+                else:
+                    print("deactivating device", d.name, d.id)
+                    d.use = False
 
         # Set the Experimental features on/off
         if use_experimental_features:
