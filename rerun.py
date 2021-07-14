@@ -2,7 +2,6 @@ import subprocess
 import os
 import argparse
 import random
-import string
 
 parser = argparse.ArgumentParser("Rerun script for BlenderProc")
 parser.add_argument("--seed",  help="Seed used for the generation")
