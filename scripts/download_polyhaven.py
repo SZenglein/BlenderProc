@@ -3,11 +3,6 @@ from sys import version_info
 if version_info.major == 2:
     raise Exception("This script only works with python3.x!")
 
-import zipfile
-from io import BytesIO
-
-from requests import get
-from bs4 import BeautifulSoup
 import requests
 from pathlib import Path
 import argparse
