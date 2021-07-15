@@ -29,7 +29,7 @@ for run_id in range(amount_of_runs):
     run_seed = random.randint(0, 1000000)
     # in each run, the arguments are reused
     cmd = ["python", os.path.join(rerun_folder, "run.py")]
-    cmd.extend(used_arguments)
+    cmd.extend(used_arguments[:-1])
     # the only exception is the output, which gets changed for each run, so that the examples are not overwritten
     cmd.append(os.path.join(output_location, str(seed), str(run_seed)))
     if seed:
