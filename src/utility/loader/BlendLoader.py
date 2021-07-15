@@ -145,7 +145,8 @@ class BlendLoader:
 
                     print("joining selected objects")
                     print(bpy.context.selected_objects)
-                    bpy.ops.object.join()
+                    if len(bpy.context.selected_objects) > 0:
+                        bpy.ops.object.join()
 
                 print("before checking raw objects: ")
                 for obj in loaded_raw_objects:
