@@ -219,8 +219,8 @@
     {
       "module": "object.PhysicsPositioning",
       "config": {
-        "min_simulation_time": 2,
-        "max_simulation_time": 5,
+        "min_simulation_time": 1,
+        "max_simulation_time": 3,
         "check_object_interval": 1,
         "object_stopped_location_threshold": 0.1,
         "object_stopped_rotation_threshold": 0.1,
