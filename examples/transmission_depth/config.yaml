@@ -74,7 +74,8 @@
         "obj_types": [ "mesh" ],
         "add_properties": {
           "cp_transmissive": True,
-          "cp_physics": True
+          "cp_physics": True,
+          "cp_physics_collision_shape": "CONVEX_HULL", # Use convex hull only for loaded objects to speed up physics
         }
       },
       "amount_of_repetitions": 50
@@ -260,7 +261,7 @@
           },
           "location": {
             "provider": "sampler.UpperRegionSampler",
-            "min_height": 1.5,
+            "min_height": 0.3,
             "max_height": 1.8,
             "to_sample_on": {
               "provider": "getter.Entity",
