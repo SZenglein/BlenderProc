@@ -246,6 +246,15 @@ class CameraSampler(CameraInterface):
                 all_tries += 1
                 # Sample a new cam pose and check if its valid
                 if self.sample_and_validate_cam_pose(cam, cam_ob, config):
+                    # override focal object to a random visible one
+                    if self.auto_override_focal_object:
+                        print("Overriding focal object to a random object in view.")
+                        cam2world_matrix = self._cam2world_matrix_from_cam_extrinsics(config)
+                        visible_objects = self._visible_objects(cam, cam2world_matrix)
+                        focal_object = choice(tuple(visible_objects))
+
+                        cam.dof.focus_object = focal_object
+
                     break
 
             if tries >= self.max_tries:
@@ -259,14 +268,6 @@ class CameraSampler(CameraInterface):
                 tries = 0
 
         print(str(all_tries) + " tries were necessary")
-
-        if (self.auto_override_focal_object):
-            print("Overriding focal object to a random object in view.")
-            cam2world_matrix = self._cam2world_matrix_from_cam_extrinsics(config)
-            visible_objects = self._visible_objects(cam, cam2world_matrix)
-            focal_object = choice(tuple(visible_objects))
-
-            cam.dof.focus_object = focal_object
 
 
 
