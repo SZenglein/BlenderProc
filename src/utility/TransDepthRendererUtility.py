@@ -39,6 +39,7 @@ class TransDepthRendererUtility:
 
         if shader_node.type == 'BSDF_PRINCIPLED':
             transmission_input = shader_node.inputs['Transmission']
+            metal_input = shader_node.inputs['Metallic']
 
             if not transmission_input.is_linked:
                 transmission_value = transmission_input.default_value
@@ -53,6 +54,21 @@ class TransDepthRendererUtility:
             # set threshold
             gt_node.inputs[1].default_value = threshold
             transmission_socket = gt_node.outputs['Value']
+
+            if not metal_input.is_linked:
+                metal_value = metal_input.default_value
+                metal_value_node = material.node_tree.nodes.new('ShaderNodeValue')
+                metal_value_node.outputs['Value'].default_value = metal_value
+                metal_value_node.location = (shader_node.location[0] - 300, shader_node.location[1])
+                material.node_tree.links.new(metal_value_node.outputs['Value'], metal_input)
+
+            gt_node = material.node_tree.nodes.new('ShaderNodeMath')
+            gt_node.operation = 'LESS_THAN'
+            material.node_tree.links.new(metal_input.links[0].from_socket, gt_node.inputs['Value'])
+            # set threshold, for metalness we assume a value of over 0.8 to be non-transmissive
+            gt_node.inputs[1].default_value = 0.8
+            not_metal_socket = gt_node.outputs['Value']
+
         else:
             if shader_node.type == 'BSDF_GLASS':
                 # assume transmission to be 1 here
@@ -72,8 +88,14 @@ class TransDepthRendererUtility:
             value_node.location = (shader_node.location[0] - 300, shader_node.location[1])
             transmission_socket = value_node.outputs['Value']
 
+        # make output 0 if high metalness is detected
+        and_node = material.node_tree.nodes.new('ShaderNodeMath')
+        and_node.operation = "MULTIPLY"
+        material.node_tree.links.new(transmission_socket, and_node.inputs[0])
+        material.node_tree.links.new(not_metal_socket, and_node.inputs[1])
+
         # transmission socket is either 0 or 1 depending on if the material is transmissive or not
-        return transmission_socket
+        return and_node.outputs[0]
 
     @staticmethod
     def _output_transmission_mask2(material, threshold: float, original_input, trans_out):
