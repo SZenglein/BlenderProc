@@ -87,6 +87,10 @@ class TransDepthRendererUtility:
             value_node.outputs['Value'].default_value = transmission_value
             value_node.location = (shader_node.location[0] - 300, shader_node.location[1])
             transmission_socket = value_node.outputs['Value']
+            value_node = material.node_tree.nodes.new('ShaderNodeValue')
+            value_node.outputs['Value'].default_value = 1
+            not_metal_socket = value_node.outputs['Value']
+
 
         # make output 0 if high metalness is detected
         and_node = material.node_tree.nodes.new('ShaderNodeMath')
