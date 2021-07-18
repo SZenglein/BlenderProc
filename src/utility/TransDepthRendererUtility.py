@@ -283,7 +283,7 @@ class TransDepthRendererUtility:
         for depth in range(0, depth_layers * transmission_steps + 1, transmission_steps):
             with Utility.UndoAfterExecution(perform_undo_op=True):
                 RendererUtility.init()
-                RendererUtility.set_samples(1)
+                # RendererUtility.set_samples(1) # only one sample produces bad image quality
                 RendererUtility.set_adaptive_sampling(0)
                 RendererUtility.set_denoiser(None)
                 RendererUtility.set_light_bounces(1, 0, 0, 1, 0, 8, 0)
