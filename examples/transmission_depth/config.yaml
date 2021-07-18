@@ -231,7 +231,7 @@
     {
       "module": "camera.CameraSampler",
       "config": {
-        "intrinsics": {
+        "intrinsics": { # due to the implementation, intrinsics are the same for all cameras in one scene
           "fov": {
             "provider": "sampler.Value",
             "type": "float",
