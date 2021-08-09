@@ -1,7 +1,11 @@
 import os
 import sys
+import tarfile
 from sys import platform
 import subprocess
+import importlib
+from io import BytesIO
+import zipfile
 
 class SetupUtility:
 
@@ -33,9 +37,9 @@ class SetupUtility:
         
         # Setup temporary directory
         if is_debug_mode:
-            SetupUtility.setup_temp_dir("examples/debugging/temp")
+            SetupUtility.setup_utility_paths("examples/debugging/temp")
         else:
-            SetupUtility.setup_temp_dir(sys.argv[sys.argv.index("--") + 2])
+            SetupUtility.setup_utility_paths(sys.argv[sys.argv.index("--") + 2])
         
         # Only prepare args in non-debug mode (In debug mode the arguments are already ready to use)
         if not is_debug_mode:
@@ -47,16 +51,15 @@ class SetupUtility:
         return sys.argv
 
     @staticmethod
-    def setup_temp_dir(temp_dir):
-        """
-        Set temporary directory
+    def setup_utility_paths(temp_dir):
+        """ Set utility paths: Temp dir and working dir.
 
-        Arguments:
         :param temp_dir: Path to temporary directory where Blender saves output. Default is shared memory.
         """
         from src.utility.Utility import Utility
         
         Utility.temp_dir = Utility.resolve_path(temp_dir)
+        Utility.working_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
         os.makedirs(Utility.temp_dir, exist_ok=True)
     
     @staticmethod
@@ -80,21 +83,21 @@ class SetupUtility:
         required_packages = []
         # Only install general required packages on first setup_pip call
         if SetupUtility.installed_packages is None:
-            required_packages += ["pyyaml==5.1.2", "imageio", "gitpython"]
+            required_packages += ["wheel", "pyyaml==5.1.2", "imageio", "gitpython"]
         if user_required_packages is not None:
             required_packages += user_required_packages
 
         # Install pip
         if platform == "linux" or platform == "linux2":
             python_bin_folder = os.path.join(blender_path, major_version, "python", "bin")
-            python_bin = os.path.join(python_bin_folder, "python3.7m")
+            python_bin = os.path.join(python_bin_folder, "python3.9")
             packages_path = os.path.abspath(os.path.join(blender_path, "custom-python-packages"))
-            pre_python_package_path = os.path.join(blender_path, major_version, "python", "lib", "python3.7", "site-packages")
+            pre_python_package_path = os.path.join(blender_path, major_version, "python", "lib", "python3.9", "site-packages")
         elif platform == "darwin":
             python_bin_folder = os.path.join(blender_path, major_version, "python", "bin")
-            python_bin = os.path.join(python_bin_folder, "python3.7m")
+            python_bin = os.path.join(python_bin_folder, "python3.9")
             packages_path = os.path.abspath(os.path.join(blender_path, "custom-python-packages"))
-            pre_python_package_path = os.path.join(blender_path, major_version, "python", "lib", "python3.7", "site-packages")
+            pre_python_package_path = os.path.join(blender_path, major_version, "python", "lib", "python3.9", "site-packages")
         elif platform == "win32":
             python_bin_folder = os.path.join(blender_path, major_version, "python", "bin")
             python_bin = os.path.join(python_bin_folder, "python")
@@ -107,12 +110,22 @@ class SetupUtility:
         SetupUtility._ensure_pip(python_bin, packages_path, pre_python_package_path)
 
         # Install all packages
+        packages_were_installed = False
         for package in required_packages:
+            # If -f (find_links) flag for pip install in required package set find_link = link to parse
+            find_link = None
+
             # Extract name and target version
             if "==" in package:
                 package_name, package_version = package.lower().split('==')
+                if ' -f ' in package_version:
+                    find_link = package_version.split(' -f ')[1].strip()
+                    package_version = package_version.split(' -f ')[0].strip()
             else:
                 package_name, package_version = package.lower(), None
+
+            if package_name == "opencv-python":
+                raise Exception("Please use opencv-contrib-python instead of opencv-python, as having both packages installed in the same environment can lead to complications.")
 
             # If the package is given via git, extract package name from url
             if package_name.startswith("git+"):
@@ -137,9 +150,23 @@ class SetupUtility:
             # Only install if its not already installed (pip would check this itself, but at first downloads the requested package which of course always takes a while)
             if not already_installed or reinstall_packages:
                 print("Installing pip package {} {}".format(package_name, package_version))
-                subprocess.Popen([python_bin, "-m", "pip", "install", package, "--target", packages_path, "--upgrade"], env=dict(os.environ, PYTHONPATH=packages_path)).wait()
-                SetupUtility.installed_packages[package_name] = package_version
+                extra_args = []
+                # Set find link flag, if required
+                if find_link:
+                    extra_args.extend(["-f", find_link])
+                    package = package_name + "==" + package_version
+                # If the env var is set, disable pip cache
+                if os.getenv("BLENDER_PROC_NO_PIP_CACHE", 'False').lower() in ('true', '1', 't'):
+                    extra_args.append("--no-cache-dir")
 
+                # Run pip install
+                subprocess.Popen([python_bin, "-m", "pip", "install", package, "--target", packages_path, "--upgrade"] + extra_args, env=dict(os.environ, PYTHONPATH=packages_path)).wait()
+                SetupUtility.installed_packages[package_name] = package_version
+                packages_were_installed = True
+
+        # If packages were installed, invalidate the module cache, s.t. the new modules can be imported right away
+        if packages_were_installed:
+            importlib.invalidate_caches()
         return packages_path
 
     @staticmethod
@@ -168,3 +195,63 @@ class SetupUtility:
             installed_packages_name = [ele[2:] if ele.startswith("b'") else ele for ele in installed_packages_name]
             installed_packages_versions = [ele[:-1] if ele.endswith("'") else ele for ele in installed_packages_versions]
             SetupUtility.installed_packages = dict(zip(installed_packages_name, installed_packages_versions))
+
+    @staticmethod
+    def extract_file(output_dir, file, mode="ZIP"):
+        """ Extract all members from the archive into output_dir.
+
+        :param output_dir: The output directory that should contain the extracted files.
+        :param file: The path to the archive which should be extracted.
+        :param mode: The type of the given file, has to be in ["TAR", "ZIP"]
+        """
+        try:
+            if mode.lower() == "zip":
+                with zipfile.ZipFile(file) as tar:
+                    tar.extractall(str(output_dir))
+            elif mode.lower() == "tar":
+                with tarfile.open(file) as tar:
+                    tar.extractall(str(output_dir))
+            else:
+                raise Exception("No such mode: " + mode)
+
+        except (IOError, zipfile.BadZipfile) as e:
+            print('Bad zip file given as input.  %s' % e)
+            raise e
+
+    @staticmethod
+    def extract_from_response(output_dir, response):
+        """ Extract all members from the archive to output_dir
+
+        :param output_dir: the dir to zip file extract to
+        :param response: the response to a requested url that contains a zip file
+        """
+        file = BytesIO(response.content)
+        SetupUtility.extract_file(output_dir, file)
+
+    @staticmethod
+    def check_if_setup_utilities_are_at_the_top(path_to_run_file):
+        """
+        Checks if the given python scripts has at the top an import to SetupUtility, if not an
+        exception is thrown. With an explanation that each python script has to start with SetupUtility.
+
+        :param path_to_run_file: path to the used python script
+        """
+        if os.path.exists(path_to_run_file):
+            with open(path_to_run_file, "r") as file:
+                text = file.read()
+                lines = [l.strip() for l in text.split("\n")]
+                lines = [l for l in lines if l and not l.startswith("#")]
+                for index, line in enumerate(lines):
+                    if "import" in line and "SetupUtility" in line:
+                        return
+                    elif "import" in line:
+                        code = "\n".join(lines[:index + 2])
+                        raise Exception('The given script "{}" does not have a SetupUtility call at the top! '
+                                        "Make sure that is the first thing you import and run! Before importing "
+                                        "anything else!\nYour code:\n#####################\n{}\n"
+                                        "####################\nReplaces this with:\nfrom src.utility.SetupUtility "
+                                        "import SetupUtility\nSetupUtility.setup([])".format(path_to_run_file, code))
+        else:
+            raise Exception("The given run script does not exist: {}".format(path_to_run_file))
+
+

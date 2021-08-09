@@ -80,6 +80,7 @@ class Initializer:
         world = bpy.data.worlds['World']
         world.use_nodes = True
         world.node_tree.nodes["Background"].inputs[0].default_value[:3] = horizon_color
+        world["category_id"] = 0
 
         # Create the camera
         cam = bpy.data.cameras.new("Camera")
@@ -114,7 +115,7 @@ class Initializer:
 
         # Set number of cpu cores used for rendering (1 thread is always used for coordination => 1
         # cpu thread means GPU-only rendering)
-        RendererUtility.set_cpu_threads(1)
+        RendererUtility.set_cpu_threads(0)
         RendererUtility.set_denoiser(DefaultConfig.denoiser)
 
         RendererUtility.set_simplify_subdivision_render(DefaultConfig.simplify_subdivision_render)

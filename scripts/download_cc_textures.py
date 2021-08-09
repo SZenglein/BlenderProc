@@ -1,10 +1,9 @@
-from sys import version_info
+from sys import version_info, path
 if version_info.major == 2:
     raise Exception("This script only works with python3.x!")
 
 import os
 import csv
-import subprocess
 import requests
 from pathlib import Path
 import argparse
@@ -15,6 +14,8 @@ parser.add_argument('--output_folder', help="Determines where the data is going 
 args = parser.parse_args()
 
 output_dir = Path(args.output_folder)
+path.append(os.path.join(os.path.dirname(__file__), ".."))
+from src.utility.SetupUtility import SetupUtility
 
 if __name__ == "__main__":
     # setting the default header, else the server does not allow the download
@@ -60,15 +61,11 @@ if __name__ == "__main__":
         if do_not_use:
             continue
         print("Download asset: {} of {}/{}".format(asset, index, len(data)))
-        current_folder =  os.path.join(cc_texture_dir, asset)
+        current_folder = os.path.join(cc_texture_dir, asset)
         if not os.path.exists(current_folder):
             os.makedirs(current_folder)
         current_file_path = os.path.join(current_folder, "{}.zip".format(asset))
-        request = requests.get(link, headers=headers)
-        with open(current_file_path, "wb") as file:
-            file.write(request.content)
-
-        subprocess.call(["unzip {} -d {}> /dev/null".format(current_file_path, current_folder)], shell=True)
-        os.remove(current_file_path)
+        response = requests.get(link, headers=headers)
+        SetupUtility.extract_from_response(current_folder, response)
 
     print("Done downloading textures, saved in {}".format(cc_texture_dir))

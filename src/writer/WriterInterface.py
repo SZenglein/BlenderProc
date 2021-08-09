@@ -1,9 +1,5 @@
 import os
-import csv
-import json
 import numpy as np
-
-import mathutils
 
 from src.main.Module import Module
 from src.utility.MathUtility import MathUtility
@@ -74,7 +70,7 @@ class WriterInterface(Module):
 
         file_prefix = self.config.get_string("output_file_prefix", default_file_prefix)
         path_prefix = os.path.join(self._determine_output_dir(), file_prefix)
-        item_writer.write_items_to_file(path_prefix, items, self.config.get_list("attributes_to_write", default_attributes))
+        item_writer.write_items_to_file(path_prefix, items, self.config.get_list("attributes_to_write", default_attributes), world_frame_change=self.destination_frame)
         Utility.register_output(self._determine_output_dir(), file_prefix, self.config.get_string("output_key", default_output_key), ".npy", version)
             
     def _apply_postprocessing(self, output_key, data, version):
@@ -104,8 +100,11 @@ class WriterInterface(Module):
         :param version: The version number original data. Type: String. Default: 1.0.0.
         :return: The post-processed image that was loaded using the file path.
         """
-        data = WriterUtility.load_output_file(Utility.resolve_path(file_path), self.write_alpha_channel)
+        data = WriterUtility.load_output_file(Utility.resolve_path(file_path), self.write_alpha_channel, remove=False)
         data, new_key, new_version = self._apply_postprocessing(key, data, version)
-        print("Key: " + key + " - shape: " + str(data.shape) + " - dtype: " + str(data.dtype) + " - path: " + file_path)
+        if isinstance(data, np.ndarray):
+            print("Key: " + key + " - shape: " + str(data.shape) + " - dtype: " + str(data.dtype) + " - path: " + file_path)
+        else:
+            print("Key: " + key + " - path: " + file_path)
         return data, new_key, new_version
 

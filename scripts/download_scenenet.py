@@ -1,7 +1,4 @@
-
-
-
-from sys import version_info
+from sys import version_info, path
 if version_info.major == 2:
     raise Exception("This script only works with python3.x!")
 
@@ -11,6 +8,8 @@ import subprocess
 from pathlib import Path
 import argparse
 
+path.append(os.path.join(os.path.dirname(__file__), ".."))
+from src.utility.SetupUtility import SetupUtility
 
 parser = argparse.ArgumentParser()
 output_dir = Path(__file__).parent / ".." / "resources" / "scenenet"
@@ -39,8 +38,7 @@ if __name__ == "__main__":
 
     # unzip the zip file
     print("Unzip the zip file.")
-    cmd = "unzip {}".format(zip_file_path)
-    subprocess.call(cmd, shell=True, cwd=os.path.dirname(zip_file_path))
+    SetupUtility.extract_file(scenenet_dir, zip_file_path) 
 
     os.remove(zip_file_path)
     os.rename(os.path.join(scenenet_dir, "robotvault-downloadscenenet-cfe5ab85ddcc"), os.path.join(scenenet_dir, "SceneNetData"))
