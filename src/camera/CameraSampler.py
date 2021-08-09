@@ -245,8 +245,8 @@ class CameraSampler(CameraInterface):
                     if self.auto_override_focal_object:
                         print("Overriding focal object to a random object in view.")
                         cam2world_matrix = self._cam2world_matrix_from_cam_extrinsics(config)
-                        visible_objects = self._visible_objects(cam, cam2world_matrix)
-                        focal_object = choice(tuple(visible_objects))
+                        visible_objects = CameraValidation.visible_objects(cam2world_matrix, self.sqrt_number_of_rays)
+                        focal_object = choice(tuple(visible_objects)).blender_obj
 
                         cam.dof.focus_object = focal_object
                     break
