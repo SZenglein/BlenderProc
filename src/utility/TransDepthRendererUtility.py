@@ -291,22 +291,9 @@ class TransDepthRendererUtility:
 
                 TransDepthRendererUtility._configure_scene(output_dir, threshold, depth)
 
-                distance_writer = RendererUtility.enable_distance_output(output_dir, "distance_" + str(depth) + "_",
+                RendererUtility.enable_distance_output(output_dir, "distance_" + str(depth) + "_",
                                                        "distance_" + str(depth))
 
-                # Mask the distance output by our transparency mask
-                # Reduces file size and cuts redundant information
-                # tree = bpy.context.scene.node_tree
-                # links = tree.links
-                # mask_node = tree.nodes.new("CompositorNodeSetAlpha")
-                # mask_node.mode = "APPLY"
-                # links.new(tree.nodes.get('Render Layers').outputs["Image"], mask_node.inputs["Alpha"])
-                # links.new(distance_writer.links[0].from_socket, mask_node.inputs["Image"])
-                # links.new(mask_node.outputs[0], distance_writer)
-
-                # make use of our custom aov
-                tree = bpy.context.scene.node_tree
-                norm_sock = Utility.get_the_one_node_with_type(tree.nodes, 'CompositorNodeRLayers').outputs["normalaov"]
                 RendererUtility.enable_normals_output(output_dir, "normals_" + str(depth) + "_",
                                                       "normals_" + str(depth))
-                RendererUtility.render(output_dir, "ntransmask_" + str(depth) + "_", "ntransmask_" + str(depth))
+                RendererUtility.render(output_dir, "ntransmask_" + str(depth) + "_", "ntransmask_" + str(depth), return_data=False)
