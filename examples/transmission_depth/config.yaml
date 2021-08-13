@@ -16,11 +16,13 @@
         "device_whitelist": ["CUDA_NVIDIA GeForce GTX 970_0000:01:00.*", "CUDA_Tesla T4_0000:da:00.*"],
         "global": {
           "output_dir": "<args:3>",
-          "max_bounces": 64,
-          "diffuse_bounces": 64,
-          "glossy_bounces": 64,
-          "transmission_bounces": 32,
-          "transparency_bounces": 32,
+          "max_bounces": 32,
+          "diffuse_bounces": 16,
+          "glossy_bounces": 16,
+          "transmission_bounces": 16,
+          "transparency_bounces": 16,
+          "resolution_x": 512,
+          "resolution_y": 512,
         }
       }
     },
@@ -78,7 +80,7 @@
           "cp_physics_collision_shape": "CONVEX_HULL", # Use convex hull only for loaded objects to speed up physics
         }
       },
-      "amount_of_repetitions": 50
+      "amount_of_repetitions": 100
     },
     # modify the loaded transmissive objects for some variation
     { # Add a displacement modifier
@@ -86,7 +88,7 @@
       "config": {
         "selector": {
           "provider": "getter.Entity",
-          "random_samples": 15,
+          "random_samples": 20,
           "conditions": {
             "cp_transmissive": True
           }
@@ -104,15 +106,15 @@
       "config": {
         "selector": {
           "provider": "getter.Entity",
-          "random_samples": 15,
+          "random_samples": 30,
           "conditions": {
             "cp_transmissive": True
           }
         },
         "scale": {
           "provider": "sampler.Uniform3d",
-          "max": [ 2, 2, 2],
-          "min": [ 0.2, 0.2, 0.2]
+          "max": [ 3, 3, 3],
+          "min": [ 0.5, 0.5, 0.5]
         }
       }
     },
