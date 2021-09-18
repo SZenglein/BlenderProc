@@ -125,4 +125,5 @@ def process_directory(parent_dir, output_dir, reverse):
             process_file(file_path, out_file)
 
 
-process_directory(parent_dir, output_dir, reverse)
+if __name__ == '__main__':
+    process_directory(parent_dir, output_dir, reverse)
