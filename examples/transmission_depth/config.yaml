@@ -38,6 +38,7 @@
       "config": {
         "floor_area": 30,
         "amount_of_extrusions": 5,
+        "wall_height": 2.5,
         "used_loader_config": [
           {
             "module": "loader.RandomBlendLoader",
@@ -106,7 +107,7 @@
       "config": {
         "selector": {
           "provider": "getter.Entity",
-          "random_samples": 30,
+          "random_samples": 50,
           "conditions": {
             "cp_transmissive": True
           }
@@ -126,7 +127,7 @@
           "conditions": {
             "cf_use_materials_of_objects": {
               "provider": "getter.Entity",
-              "random_samples": 20,
+              "random_samples": 40,
               "conditions": {
                 "cp_transmissive": True
               }
@@ -178,7 +179,7 @@
         "pos_sampler": {
           "provider": "sampler.UpperRegionSampler",
           "min_height": 0.1,
-          "max_height": 1.8,
+          "max_height": 2.3,
           "to_sample_on": {
             "provider": "getter.Entity",
             "index": 0,
@@ -264,7 +265,7 @@
           "location": {
             "provider": "sampler.UpperRegionSampler",
             "min_height": 0.3,
-            "max_height": 1.8,
+            "max_height": 2.3,
             "to_sample_on": {
               "provider": "getter.Entity",
               "index": 0,
