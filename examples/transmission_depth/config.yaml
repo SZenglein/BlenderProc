@@ -13,7 +13,7 @@
       "module": "main.Initializer",
       "config": {
         "compute_device_type": "OPTIX",
-        "device_whitelist": ["CUDA_NVIDIA GeForce GTX 970_0000:01:00.*", "CUDA_Tesla T4_0000:da:00.*"],
+        # "device_whitelist": ["CUDA_NVIDIA GeForce GTX 970_0000:01:00.*", "CUDA_Tesla T4_0000:da:00.*"],
         "global": {
           "output_dir": "<args:3>",
           "max_bounces": 32,
