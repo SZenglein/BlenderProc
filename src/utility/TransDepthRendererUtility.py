@@ -24,7 +24,7 @@ class TransDepthRendererUtility:
         # Steps:
         # - Find Node controlling transmission
         # - Return output (socket) that specifies if the material is transmissive
-        print("getting output node of material: " + material.name);
+        # print("getting output node of material: " + material.name);
         output_node = material.node_tree.get_output_node('CYCLES')
         surface_link = output_node.inputs['Surface'].links[0]
 

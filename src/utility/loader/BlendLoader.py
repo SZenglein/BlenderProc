@@ -130,8 +130,6 @@ class BlendLoader:
                         bpy.data.objects.remove(obj, do_unlink=True)
 
                 for collection in data_to.collections:
-                    print("doing collection")
-                    print(collection)
                     # deselect all objects
                     for obj in bpy.data.objects:
                         obj.select_set(False)
@@ -139,19 +137,12 @@ class BlendLoader:
                     # now select all collection objects and join them
                     for obj in collection.all_objects:
                         if len(obj.users_scene) > 0:
-                            print("selecting object: " + obj.name)
                             obj.select_set(True)
                             bpy.context.view_layer.objects.active = obj
 
-                    print("joining selected objects")
-                    print(bpy.context.selected_objects)
                     if len(bpy.context.selected_objects) > 0:
                         bpy.ops.object.join()
 
-                print("before checking raw objects: ")
-                for obj in loaded_raw_objects:
-                    print(obj)
-                print(loaded_raw_objects)
                 # now clean up again
                 for obj in loaded_raw_objects:
                     # print("checking raw object: " + obj.name + ", users_scene: " + str(obj.users_scene))
@@ -188,7 +179,7 @@ class BlendLoader:
                         # Set frame_end to the next free keyframe
                         bpy.context.scene.frame_end = max_keyframe + 1
 
-                print("Selected " + str(len(loaded_objects)) + " of the loaded objects by type")
+                print("Selected " + str(len(loaded_objects)) + " of the loaded objects by type:", loaded_objects)
             elif data_block == "materials":
                 for obj in getattr(data_to, data_block):
                     loaded_objects.append(Material(obj))
